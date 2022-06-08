@@ -13,11 +13,12 @@ contract StateVault {
 
     address public owner;
     uint private dataId;
+    uint[] public dataBin;
     uint private entityId;
 
-    mapping(uint => bytes32) private data;
-    mapping(uint => mapping(bytes32 => Variable)) private variables;
-    mapping(address => uint) private entities;
+    mapping(uint => bytes32) public data;
+    mapping(uint => mapping(bytes32 => Variable)) public variables;
+    mapping(address => uint) public entities;
     constructor(){
         owner = msg.sender;
     }
@@ -35,6 +36,9 @@ contract StateVault {
         v.isDeclared = true;
         v.isKey = false;
         v.isConstant = false;
+    }
+    function Boolean(string memory _name) public{
+        Var(_name, DATATYPE.BOOLEAN);
     }
     function String(string memory _name) public{
         Var(_name, DATATYPE.STRING);
@@ -58,29 +62,44 @@ contract StateVault {
         uint32 remainder = uint32(_data.length % 32);
         uint8 chunkCount = uint8(_data.length / 32);
         if (remainder > 0) chunkCount++;
-        
+        //recycle used pointers
+        while(v.dataPointers.length > 0){
+            uint pointer = v.dataPointers[v.dataPointers.length -1];
+            dataBin.push(pointer);
+            v.dataPointers.pop();
+            delete data[pointer];
+        }
         for (uint i; i < chunkCount; i++){
             uint start = i*32;
             uint end = (i+1)*32;
             if(end > _data.length) end = _data.length;
             bytes32 chunk = bytes32(_data.substring (start, end));
-            data[dataId] = chunk;
-            v.dataPointers.push(dataId);
-            dataId++;
+            //If dataBin has recycled pointers, use them first.
+            if(dataBin.length > 0){
+                uint pointer = dataBin[dataBin.length -1];
+                dataBin.pop();
+                v.dataPointers.push(pointer);
+                data[pointer] = chunk;
+            }else{
+                data[++dataId] = chunk;
+                v.dataPointers.push(dataId);
+            }
+            
         }
     }
-
-    function setAddress(string memory _name, address _data) public {
-        set(_name, abi.encode(_data), DATATYPE.ADDRESS);
-    }
+    
     function setBytes(string memory _name, bytes memory _data) public {
         set(_name, _data, DATATYPE.BYTES);
     }
-
     function setInteger(string memory _name, int _data) public {
         set(_name, abi.encode(_data), DATATYPE.INTEGER);
     }
-
+    function setBoolean(string memory _name, bool _data) public {
+        set(_name, abi.encode(_data), DATATYPE.BOOLEAN);
+    }
+    function setAddress(string memory _name, address _data) public {
+        set(_name, abi.encode(_data), DATATYPE.ADDRESS);
+    }
     function setString(string memory _name, string memory _string) public {
         set(_name, abi.encode(_string), DATATYPE.STRING);
     }
@@ -100,8 +119,14 @@ contract StateVault {
         }
         return temp;
     }
+    
     function getBytes(string memory _name) public view returns (bytes memory ){
         return get(_name, DATATYPE.BYTES);
+    }
+    function getBoolean(string memory _name) public view returns (bool _bool){
+        bytes memory _data = get(_name, DATATYPE.BOOLEAN);
+        (_bool) = abi.decode(_data, (bool));
+        return _bool;
     }
     function getAddress(string memory _name) public view returns (address _address){
         bytes memory _data = get(_name, DATATYPE.ADDRESS);
