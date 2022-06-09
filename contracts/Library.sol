@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.7;
 
-enum DATATYPE {BYTES, INTEGER, STRING, ADDRESS}
+enum DATATYPE {BOOLEAN, BYTES, INTEGER, STRING, ADDRESS}
 struct Variable{
     bytes32 name;
     DATATYPE dataType; // 0 -> bytes, 1 -> integer, 2 -> string, 3 -> address
