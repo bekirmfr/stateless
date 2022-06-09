@@ -2,7 +2,7 @@
 pragma solidity 0.8.7;
 
 enum DATATYPE {BOOLEAN, BYTES, INTEGER, STRING, ADDRESS}
-struct Variable{
+struct iVariable{
     bytes32 name;
     DATATYPE dataType; // 0 -> bytes, 1 -> integer, 2 -> string, 3 -> address
     bool isDeclared;
